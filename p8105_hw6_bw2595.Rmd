@@ -4,4 +4,75 @@ author: "Blair Wigsten"
 date: "11/19/2019"
 output: github_document
 ---
+# Problem 1
+
+```{r}
+library(tidyverse)
+library(purrr)
+```
+
+Load and clean the data for regression analysis (i.e. convert numeric to factor where appropriate, check for missing data, etc.).
+
+Propose a regression model for birthweight. This model may be based on a hypothesized structure for the factors that underly birthweight, on a data-driven model-building process, or a combination of the two. Describe your modeling process and show a plot of model residuals against fitted values – use add_predictions and add_residuals in making this plot.
+
+```{r}
+birth = read_csv(file = "data/birthweight.csv") %>%
+  janitor::clean_names() %>%
+  mutate(babysex = factor(babysex, c("1", "2")), 
+         frace = factor(frace, c("1", "2", "3", "4", "8", "9")),
+         malform = factor(malform, c("0", "1")), 
+         mrace = factor(mrace, c("1", "2", "3", "4", "8"))
+         ) %>%
+  drop_na()
+birth
+
+fit = lm(bwt ~ babysex + gaweeks + malform + smoken, data = birth)
+predict = modelr::add_predictions(birth, fit)
+predict
+resid = modelr::add_residuals(birth, fit)
+
+```
+First, the birthweight dataset was loaded and cleaned. All variables were initially in numeric form. Categorical variables, based on variable definitions in the code book, were converted to factor variables. Using drop_na, it was concluded that there were no missing values in the dataset. To create the baseline regression model, I used a hypothetical framework and prior knowledge of factors that would affect birthweight. Our first model includes baby sex, gestational age in weeks, presence or absence of malformations that could affect birthweight, and average number of cigarettes smoked per day during pregnancy. These factors were chosen based on outside knowledge of variables that may influence birthweight. 
+
+
+# Problem 2
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+weather_df
+```
+
+```{r}
+fit = lm(tmax ~ tmin, data = weather_df) %>%
+  mutate(r_squared = broom::glance(),
+         )
+fit
+
+```
+
+
+The boostrap is helpful when you’d like to perform inference for a parameter / value / summary that doesn’t have an easy-to-write-down distribution in the usual repeated sampling framework. We’ll focus on a simple linear regression with tmax as the response and tmin as the predictor, and are interested in the distribution of two quantities estimated from these data:
+
+r̂ 2
+log(β̂ 0∗β̂ 1)
+
+Use 5000 bootstrap samples and, for each bootstrap sample, produce estimates of these two quantities. Plot the distribution of your estimates, and describe these in words. Using the 5000 bootstrap estimates, identify the 2.5% and 97.5% quantiles to provide a 95% confidence interval for r̂ 2 and log(β̂ 0∗β̂ 1). Note: broom::glance() is helpful for extracting r̂ 2 from a fitted regression, and broom::tidy() (with some additional wrangling) should help in computing log(β̂ 0∗β̂ 1).
+
+Optional post-assignment survey
+
+
+
+
+
+
 
