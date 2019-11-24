@@ -129,6 +129,30 @@ weather_df %>%
     y = "Density")
 ```
 
+* This plot shows the density of log(beta0*beta1) values of our 5000 bootstrap samples. The distribution looks relatively normal. The highest density of log(beta0*beta1) is around 2.02. We are 95% confident that the true value of log(beta0*beta1) lies between 1.965 and 2.058, produced from the code chunk below. 
+
+```{r}
+CI = weather_df %>%
+  modelr::bootstrap(n = 5000) %>%
+  mutate(models = map(strap, ~lm(tmax ~ tmin, data = .x)), 
+         results = map(models, broom::tidy)) %>%
+  select(results) %>%
+  unnest(results) %>%
+  select(term, estimate) %>%
+  pivot_wider(
+    names_from = "term", 
+    values_from = "estimate") %>%
+  unnest() %>%
+  janitor::clean_names() %>%
+  mutate(beta0_beta1 = intercept * tmin, 
+         log_beta0_beta1 = log(beta0_beta1)) %>%
+  pull(log_beta0_beta1) %>%
+  as.vector() %>%
+  quantile(probs = c(0.025, 0.975), na.rm = TRUE) 
+CI
+```
+
+
 ## Plot of r squared
 
 ```{r}
@@ -138,7 +162,6 @@ weather_df %>%
          results = map(models, broom::glance)) %>%
   select(results) %>%
   unnest(results) %>%
-  quantile(pull(r_squared, probs=c(0.025, 0.975), na.rm=TRUE)) %>%
   ggplot(aes(x = r.squared)) +
   geom_density() +
   labs(
@@ -146,17 +169,20 @@ weather_df %>%
     x = "r squared", 
     y = "Density")
 ```
+* This plot shows the distribution of r-squared for the 5000 bootstrap samples. The highest density of r-squared values is around 0.913, with a density of around 47. Given this r-squared value, more times than not, the linear model containing only tmin explains about 91.3% of the variation in tmax. Since we are looking for our model to have a high r-squared value and the density is often between 0.89 and 0.93, our model is pretty good at explaining variation in tmax. Taking the 95% confidence interval into consideration of 0.894 to 0.928 shown below, we are 95% confident that the true r-squared value lies between these two numbers, which is a relatively high r-squared value (which is what we want).
 
-
-The boostrap is helpful when you’d like to perform inference for a parameter / value / summary that doesn’t have an easy-to-write-down distribution in the usual repeated sampling framework. We’ll focus on a simple linear regression with tmax as the response and tmin as the predictor, and are interested in the distribution of two quantities estimated from these data:
-
-r̂ 2
-log(β̂ 0∗β̂ 1)
-
-Use 5000 bootstrap samples and, for each bootstrap sample, produce estimates of these two quantities. Plot the distribution of your estimates, and describe these in words. Using the 5000 bootstrap estimates, identify the 2.5% and 97.5% quantiles to provide a 95% confidence interval for r̂ 2 and log(β̂ 0∗β̂ 1). Note: broom::glance() is helpful for extracting r̂ 2 from a fitted regression, and broom::tidy() (with some additional wrangling) should help in computing log(β̂ 0∗β̂ 1).
-
-
-
+```{r}
+CI = weather_df %>%
+  modelr::bootstrap(n = 5000) %>%
+  mutate(models = map(strap, ~lm(tmax ~ tmin, data = .x)), 
+         results = map(models, broom::glance)) %>%
+  select(results) %>%
+  unnest(results) %>%
+  pull(r.squared) %>%
+  as.vector() %>%
+  quantile(probs = c(0.025, 0.975), na.rm = TRUE)
+CI
+```
 
 
 
