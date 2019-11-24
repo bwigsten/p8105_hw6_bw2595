@@ -1,7 +1,7 @@
 ---
 title: "p8105_hw6_bw2595"
 author: "Blair Wigsten"
-date: "11/19/2019"
+date: "11/25/2019"
 output: github_document
 ---
 # Problem 1
@@ -13,9 +13,7 @@ library(modelr)
 library(mgcv)
 ```
 
-Load and clean the data for regression analysis (i.e. convert numeric to factor where appropriate, check for missing data, etc.).
-
-Propose a regression model for birthweight. This model may be based on a hypothesized structure for the factors that underly birthweight, on a data-driven model-building process, or a combination of the two. 
+## Load and Clean the Data
 
 ```{r}
 birth = read_csv(file = "data/birthweight.csv") %>%
@@ -37,15 +35,12 @@ plot = birth %>%
   geom_point()
 plot
 ```
-First, the birthweight dataset was loaded and cleaned. All variables were initially in numeric form. Categorical variables, based on variable definitions in the code book, were converted to factor variables. Using drop_na, it was concluded that there were no missing values in the dataset. To create the baseline regression model, I used a hypothetical framework and prior knowledge of factors that would affect birthweight. Our first model includes baby sex, gestational age in weeks, presence or absence of malformations that could affect birthweight, and average number of cigarettes smoked per day during pregnancy. These factors were chosen based on outside knowledge of variables that may influence birthweight. 
+
+* First, the birthweight dataset was loaded and cleaned. All variables were initially in numeric form. Categorical variables, based on variable definitions in the code book, were converted to factor variables. Using drop_na, it was concluded that there were no missing values in the dataset. To create the baseline regression model, I used a hypothetical framework and prior knowledge of factors that would affect birthweight. Our first model includes baby sex, gestational age in weeks, presence or absence of malformations that could affect birthweight, and average number of cigarettes smoked per day during pregnancy. These factors were chosen based on outside knowledge of variables that may influence birthweight. 
 
 ** describe the plot **
 
-Compare your model to two others:
-
-One using length at birth and gestational age as predictors (main effects only)
-One using head circumference, length, sex, and all interactions (including the three-way interaction) between these
-Make this comparison in terms of the cross-validated prediction error; use crossv_mc and functions in purrr as appropriate.
+## Create the two other comparison models
 
 ```{r}
 fit = lm(bwt ~ babysex + gaweeks + malform + smoken, data = birth)
@@ -56,6 +51,8 @@ interaction = lm(bwt ~ bhead + blength + babysex + bhead*blength + bhead*babysex
 
 ```
 
+## Compare models using cross validation 
+
 ```{r}
 cv_df =
   crossv_mc(birth, 100) %>% 
@@ -63,7 +60,6 @@ cv_df =
     train = map(train, as_tibble),
     test = map(test, as_tibble))
 ```
-
 
 ```{r}
 cv_df = 
@@ -83,11 +79,19 @@ pivot_longer(
     values_to = "rmse",
     names_prefix = "rmse_") %>% 
   mutate(model = fct_inorder(model)) %>% 
-  ggplot(aes(x = model, y = rmse)) + geom_violin()
+  ggplot(aes(x = model, y = rmse)) + geom_violin() +
+  labs(
+    title = "Violin Plot of Cross-Validated Prediction Errors", 
+    x = "Model Name", 
+    y = "Root Mean Square Errors"
+  )
 ```
-Based on this violin plot, I would conclude that the model including all interactions between the predictors is the best model. This has the lowest rmse, which means that the model with interaction terms has the lowest prediction error. This should be futher validated using hypothesis testing and more concrete measures of cross validation. 
+
+* Based on this violin plot, I would conclude that the model including all interactions between the predictors is the best model. This has the lowest rmse, which means that the model with interaction terms has the lowest prediction error. This should be futher validated using hypothesis testing and more concrete measures of cross validation. 
 
 # Problem 2
+
+## Load and clean the data
 
 ```{r}
 weather_df = 
@@ -104,7 +108,7 @@ weather_df =
 weather_df
 ```
 
-## Plot of log(beta0*beta1)
+## Using bootstrap to get 500 estimates of log(beta0*beta1) and plot log(beta0*beta1) distribution
 
 ```{r}
 weather_df %>%
@@ -131,6 +135,8 @@ weather_df %>%
 
 * This plot shows the density of log(beta0*beta1) values of our 5000 bootstrap samples. The distribution looks relatively normal. The highest density of log(beta0*beta1) is around 2.02. We are 95% confident that the true value of log(beta0*beta1) lies between 1.965 and 2.058, produced from the code chunk below. 
 
+### 95% CI of log(beta0*beta1)
+
 ```{r}
 CI = weather_df %>%
   modelr::bootstrap(n = 5000) %>%
@@ -153,7 +159,7 @@ CI
 ```
 
 
-## Plot of r squared
+## Using bootstrap to get 500 estimates of r-squared and plot r-squared distribution
 
 ```{r}
 weather_df %>%
@@ -169,7 +175,10 @@ weather_df %>%
     x = "r squared", 
     y = "Density")
 ```
+
 * This plot shows the distribution of r-squared for the 5000 bootstrap samples. The highest density of r-squared values is around 0.913, with a density of around 47. Given this r-squared value, more times than not, the linear model containing only tmin explains about 91.3% of the variation in tmax. Since we are looking for our model to have a high r-squared value and the density is often between 0.89 and 0.93, our model is pretty good at explaining variation in tmax. Taking the 95% confidence interval into consideration of 0.894 to 0.928 shown below, we are 95% confident that the true r-squared value lies between these two numbers, which is a relatively high r-squared value (which is what we want).
+
+### 95% CI of r-squared
 
 ```{r}
 CI = weather_df %>%
