@@ -85,7 +85,7 @@ pivot_longer(
   mutate(model = fct_inorder(model)) %>% 
   ggplot(aes(x = model, y = rmse)) + geom_violin()
 ```
-
+Based on this violin plot, I would conclude that the model including all interactions between the predictors is the best model. This has the lowest rmse, which means that the model with interaction terms has the lowest prediction error. This should be futher validated using hypothesis testing and more concrete measures of cross validation. 
 
 # Problem 2
 
@@ -104,12 +104,47 @@ weather_df =
 weather_df
 ```
 
-```{r}
-fit = lm(tmax ~ tmin, data = weather_df) %>%
-  mutate(r_squared = broom::glance(),
-         )
-fit
+## Plot of log(beta0*beta1)
 
+```{r}
+weather_df %>%
+  modelr::bootstrap(n = 5000) %>%
+  mutate(models = map(strap, ~lm(tmax ~ tmin, data = .x)), 
+         results = map(models, broom::tidy)) %>%
+  select(results) %>%
+  unnest(results) %>%
+  select(term, estimate) %>%
+  pivot_wider(
+    names_from = "term", 
+    values_from = "estimate") %>%
+  unnest() %>%
+  janitor::clean_names() %>%
+  mutate(beta0_beta1 = intercept * tmin, 
+         log_beta0_beta1 = log(beta0_beta1)) %>%
+  ggplot(aes(x = log_beta0_beta1)) +
+  geom_density() +
+  labs(
+    title = "Distribution of Log(beta0*beta1)", 
+    x = "log(beta0*beta1)", 
+    y = "Density")
+```
+
+## Plot of r squared
+
+```{r}
+weather_df %>%
+  modelr::bootstrap(n = 5000) %>%
+  mutate(models = map(strap, ~lm(tmax ~ tmin, data = .x)), 
+         results = map(models, broom::glance)) %>%
+  select(results) %>%
+  unnest(results) %>%
+  quantile(pull(r_squared, probs=c(0.025, 0.975), na.rm=TRUE)) %>%
+  ggplot(aes(x = r.squared)) +
+  geom_density() +
+  labs(
+    title = "Distribution of r squared", 
+    x = "r squared", 
+    y = "Density")
 ```
 
 
@@ -120,7 +155,8 @@ log(β̂ 0∗β̂ 1)
 
 Use 5000 bootstrap samples and, for each bootstrap sample, produce estimates of these two quantities. Plot the distribution of your estimates, and describe these in words. Using the 5000 bootstrap estimates, identify the 2.5% and 97.5% quantiles to provide a 95% confidence interval for r̂ 2 and log(β̂ 0∗β̂ 1). Note: broom::glance() is helpful for extracting r̂ 2 from a fitted regression, and broom::tidy() (with some additional wrangling) should help in computing log(β̂ 0∗β̂ 1).
 
-Optional post-assignment survey
+
+
 
 
 
