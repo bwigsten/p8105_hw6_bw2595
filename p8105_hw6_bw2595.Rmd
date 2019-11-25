@@ -38,7 +38,7 @@ plot
 
 * First, the birthweight dataset was loaded and cleaned. All variables were initially in numeric form. Categorical variables, based on variable definitions in the code book, were converted to factor variables. Using drop_na, it was concluded that there were no missing values in the dataset. To create the baseline regression model, I used a hypothetical framework and prior knowledge of factors that would affect birthweight. Our first model includes baby sex, gestational age in weeks, presence or absence of malformations that could affect birthweight, and average number of cigarettes smoked per day during pregnancy. These factors were chosen based on outside knowledge of variables that may influence birthweight. 
 
-** describe the plot **
+* The residuals vs. predicted values plot above shows that the majority of residuals fall between -1000 and 1000, with corresponding fitted values between 2800 and 3300.
 
 ## Create the two other comparison models
 
